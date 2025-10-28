@@ -1,0 +1,53 @@
+# Synthetic Newsroom Configuration
+# Copy this file to settings.yaml and customize as needed
+
+# News sources (RSS feeds)
+sources:
+  - type: rss
+    url: "https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja"
+    max_articles: 5
+
+# Voice configuration for each speaker
+# provider: mock (testing), elevenlabs (production), gcloud (alternative)
+voices:
+  chatgpt:
+    provider: mock
+    voice_id: gpt-voice-a
+    speed: 1.02
+  gemini:
+    provider: mock
+    voice_id: gpt-voice-b
+    speed: 0.98
+  claude:
+    provider: mock
+    voice_id: gpt-voice-c
+    speed: 1.00
+  host:
+    provider: mock
+    voice_id: host-voice
+    speed: 1.00
+
+# Audio processing settings
+audio:
+  target_lufs: -16.0        # Target loudness (LUFS)
+  peak_db: -1.0              # Maximum true peak (dBTP)
+  bgm_path: null             # Optional: "assets/bgm/soft_news_bed.mp3"
+  bgm_volume_db: -15.0       # BGM volume relative to voice (in dB)
+
+# Storage configuration
+storage:
+  driver: local              # "local" | "s3"
+  local_base: data/episodes
+  public_base_url: http://localhost:8080/podcast
+
+  # S3 settings (when driver: s3)
+  # s3_endpoint, s3_bucket, access keys are loaded from .env
+
+# RSS feed metadata
+rss:
+  site_title: "Synthetic Newsroom"
+  site_link: "https://example.com"
+  site_description: "AI daily debate podcast - ニュースをAIが討論"
+  language: "ja"
+  author: "Synthetic Newsroom AI"
+  image_url: null  # Optional: URL to podcast cover art (1400x1400 recommended)

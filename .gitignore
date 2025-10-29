@@ -37,6 +37,8 @@ env/
 # Environment and secrets
 .env
 .env.local
+.credentials/
+*.json
 configs/settings.yaml
 configs/voices.yaml
 

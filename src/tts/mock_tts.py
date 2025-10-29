@@ -102,7 +102,6 @@ def create_tts_provider(provider_type: str = "mock", **kwargs) -> TTSProvider:
         from .elevenlabs_tts import ElevenLabsTTSProvider
         return ElevenLabsTTSProvider(**kwargs)
     elif provider_type == "gcloud":
-        # TODO: Implement Google Cloud TTS provider
         from .gcloud_tts import GoogleCloudTTSProvider
         return GoogleCloudTTSProvider(**kwargs)
     else:

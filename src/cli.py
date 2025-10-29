@@ -11,6 +11,7 @@ from .shared.logger import setup_logger
 from .shared.settings import get_settings
 from .workflows.daily_pipeline import DailyPipeline
 from .workflows.backfill_pipeline import backfill_episodes
+from .agents.character_initializer import CharacterInitializer
 
 logger = setup_logger()
 
@@ -198,6 +199,63 @@ def info():
     click.echo(f"  Anthropic:  {'✓' if settings.anthropic_api_key else '✗'}")
     click.echo(f"  Google:     {'✓' if settings.google_api_key else '✗'}")
     click.echo("=" * 60)
+
+
+@cli.command()
+@click.option('--force', '-f', is_flag=True, help='Force regeneration even if characters exist')
+def init_characters(force):
+    """
+    Initialize AI debate character personas.
+
+    Each AI (ChatGPT, Gemini, Claude) will define their own debate character,
+    including persona name, first-person pronoun, stance, and characteristics.
+
+    This command only needs to be run once (or with --force to regenerate).
+    """
+    try:
+        click.echo("Initializing AI character personas...")
+        click.echo("=" * 60)
+
+        initializer = CharacterInitializer()
+
+        # Check if characters already exist
+        existing = initializer.load_characters()
+        if existing and not force:
+            click.echo("\nCharacter configurations already exist:")
+            click.echo("")
+            for speaker, char in existing.items():
+                click.echo(f"  {char['ai_name']} ({char['company']})")
+                click.echo(f"    Persona: {char['persona_name']}")
+                click.echo(f"    Stance:  {char['stance']}")
+                click.echo(f"    Phrase:  「{char['catchphrase']}」")
+                click.echo("")
+            click.echo("Use --force to regenerate.")
+            return
+
+        # Initialize characters
+        characters = initializer.initialize_all_characters(force=force)
+
+        click.echo("\n✅ Character personas initialized successfully!")
+        click.echo("")
+
+        for speaker, char in characters.items():
+            click.echo(f"  {char['ai_name']} ({char['company']})")
+            click.echo(f"    Persona:  {char['persona_name']}")
+            click.echo(f"    一人称:   {char['first_person']}")
+            click.echo(f"    Stance:   {char['stance']}")
+            click.echo(f"    特徴:     {char['characteristics']}")
+            click.echo(f"    フレーズ: 「{char['catchphrase']}」")
+            click.echo(f"    紹介:     {char['introduction_style']}")
+            click.echo("")
+
+        config_path = initializer.character_path
+        click.echo(f"Configuration saved to: {config_path}")
+        click.echo("\nThese characters will be used in all future debates!")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize characters: {e}", exc_info=True)
+        click.echo(f"\n❌ Error: {e}", err=True)
+        sys.exit(1)
 
 
 def main():

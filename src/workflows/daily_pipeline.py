@@ -37,7 +37,7 @@ class DailyPipeline:
         self.rss_collector = RSSCollector()
         self.article_extractor = ArticleExtractor()
         self.summarizer = ArticleSummarizer()
-        self.debate_orchestrator = DebateOrchestrator()
+        self.debate_orchestrator = DebateOrchestrator(date=self.date)
         self.audio_mixer = AudioMixer(
             target_lufs=self.settings.audio.target_lufs,
             peak_db=self.settings.audio.peak_db,
@@ -170,13 +170,34 @@ class DailyPipeline:
         """Stage 4: Text-to-Speech."""
         logger.info("Stage 4: Synthesizing speech")
 
-        # Create TTS provider (mock by default)
-        # TODO: Use voice config from settings
-        tts_provider = create_tts_provider(provider_type="mock")
+        # Create TTS providers for each speaker based on settings
+        tts_providers = {}
+        for speaker, voice_config in self.settings.voices.items():
+            tts_providers[speaker] = create_tts_provider(
+                provider_type=voice_config.provider,
+                voice_name=voice_config.voice_id,
+                speaking_rate=voice_config.speed,
+                pitch=voice_config.pitch or 0.0
+            )
 
-        # Synthesize all lines
+        # Synthesize all lines with speaker-specific providers
         audio_dir = self.work_dir / "audio_stems"
-        audio_files = tts_provider.synthesize_lines(script.lines, audio_dir)
+        audio_dir.mkdir(parents=True, exist_ok=True)
+        audio_files = []
+
+        for i, line in enumerate(script.lines):
+            output_path = audio_dir / f"{i:03d}_{line.speaker}.wav"
+            provider = tts_providers.get(line.speaker)
+            if provider is None:
+                logger.warning(
+                    f"No TTS provider for speaker '{line.speaker}', "
+                    f"using default"
+                )
+                provider = tts_providers.get('host') or create_tts_provider(
+                    provider_type="mock"
+                )
+            provider.synthesize(line.text, line.speaker, output_path)
+            audio_files.append(output_path)
 
         logger.info(f"Synthesized {len(audio_files)} audio segments")
         return audio_files

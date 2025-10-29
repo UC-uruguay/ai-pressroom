@@ -4,7 +4,7 @@ RSS 2.0 feed builder for podcast.
 from datetime import datetime
 from pathlib import Path
 from typing import List
-from xml.etree.ElementTree import Element, SubElement, ElementTree
+from xml.etree.ElementTree import Element, SubElement, ElementTree, tostring
 from xml.dom import minidom
 
 from .episode_meta import EpisodeMeta
@@ -134,7 +134,7 @@ class PodcastRSSBuilder:
 
     def _prettify_xml(self, elem: Element) -> str:
         """Return pretty-printed XML string."""
-        rough_string = ElementTree.tostring(elem, encoding='utf-8')
+        rough_string = tostring(elem, encoding='utf-8')
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="  ", encoding='utf-8').decode('utf-8')
 

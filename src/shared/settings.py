@@ -2,11 +2,12 @@
 Settings management using Pydantic Settings.
 Loads configuration from both .env and YAML files.
 """
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
 import yaml
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -67,6 +68,9 @@ class Settings(BaseSettings):
     google_api_key: Optional[str] = Field(None, alias="GOOGLE_API_KEY")
     anthropic_api_key: Optional[str] = Field(None, alias="ANTHROPIC_API_KEY")
     elevenlabs_api_key: Optional[str] = Field(None, alias="ELEVENLABS_API_KEY")
+    google_application_credentials: Optional[str] = Field(
+        None, alias="GOOGLE_APPLICATION_CREDENTIALS"
+    )
 
     # S3/R2 (from .env)
     s3_endpoint: Optional[str] = Field(None, alias="S3_ENDPOINT")
@@ -85,6 +89,15 @@ class Settings(BaseSettings):
     project_root: Path = Field(default_factory=lambda: Path(__file__).parent.parent.parent)
     config_dir: Path = Field(default_factory=lambda: Path(__file__).parent.parent.parent / "configs")
     data_dir: Path = Field(default_factory=lambda: Path(__file__).parent.parent.parent / "data")
+
+    @model_validator(mode='after')
+    def set_google_credentials_env(self) -> 'Settings':
+        """Set GOOGLE_APPLICATION_CREDENTIALS environment variable."""
+        if self.google_application_credentials:
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = (
+                self.google_application_credentials
+            )
+        return self
 
     def load_yaml_config(self, yaml_path: Optional[Path] = None) -> None:
         """Load additional configuration from YAML file."""

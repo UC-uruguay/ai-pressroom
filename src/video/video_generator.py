@@ -41,7 +41,8 @@ class VideoGenerator:
         self,
         script: DebateScript,
         audio_path: Path,
-        output_path: Path
+        output_path: Path,
+        audio_stems_dir: Optional[Path] = None
     ) -> Path:
         """
         Generate video from debate script and audio.
@@ -50,6 +51,7 @@ class VideoGenerator:
             script: Debate script with timing information
             audio_path: Path to final mixed audio (MP3)
             output_path: Path to save output video
+            audio_stems_dir: Directory containing individual audio stems
 
         Returns:
             Path to generated video
@@ -62,7 +64,11 @@ class VideoGenerator:
 
         # Step 2: Create video segments for each speaker
         logger.info("Creating video segments...")
-        segment_list = self._create_segment_list(script, avatars)
+        segment_list = self._create_segment_list(
+            script,
+            avatars,
+            audio_stems_dir
+        )
 
         # Step 3: Generate concat file for FFmpeg
         concat_file = self._create_concat_file(segment_list)
@@ -77,7 +83,8 @@ class VideoGenerator:
     def _create_segment_list(
         self,
         script: DebateScript,
-        avatars: Dict[str, Path]
+        avatars: Dict[str, Path],
+        audio_stems_dir: Optional[Path] = None
     ) -> list[dict]:
         """
         Create list of video segments with timing.
@@ -85,6 +92,7 @@ class VideoGenerator:
         Args:
             script: Debate script
             avatars: Dictionary of avatar image paths
+            audio_stems_dir: Directory containing individual audio stems
 
         Returns:
             List of segment info dicts
@@ -92,9 +100,22 @@ class VideoGenerator:
         segments = []
         current_time = 0.0
 
-        for line in script.lines:
+        for i, line in enumerate(script.lines):
             speaker = line.speaker
-            duration = line.estimated_duration_sec + line.pause_after_sec
+
+            # Get actual duration from audio file if available
+            if audio_stems_dir and audio_stems_dir.exists():
+                audio_file = audio_stems_dir / f"{i:03d}_{speaker}.wav"
+                if audio_file.exists():
+                    duration = self._get_audio_duration(audio_file)
+                else:
+                    logger.warning(
+                        f"Audio file not found: {audio_file}, "
+                        f"using estimated duration"
+                    )
+                    duration = line.estimated_duration_sec + line.pause_after_sec
+            else:
+                duration = line.estimated_duration_sec + line.pause_after_sec
 
             # Get avatar path (fallback to chatgpt if not found)
             avatar_path = avatars.get(
@@ -113,6 +134,41 @@ class VideoGenerator:
             current_time += duration
 
         return segments
+
+    def _get_audio_duration(self, audio_file: Path) -> float:
+        """
+        Get duration of audio file using FFprobe.
+
+        Args:
+            audio_file: Path to audio file
+
+        Returns:
+            Duration in seconds
+        """
+        import json
+
+        cmd = [
+            "ffprobe",
+            "-v", "quiet",
+            "-print_format", "json",
+            "-show_format",
+            str(audio_file)
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            data = json.loads(result.stdout)
+            duration = float(data["format"]["duration"])
+            return duration
+        except Exception as e:
+            logger.error(f"Failed to get audio duration for {audio_file}: {e}")
+            # Fallback to estimated duration
+            return 5.0
 
     def _create_concat_file(self, segments: list[dict]) -> Path:
         """

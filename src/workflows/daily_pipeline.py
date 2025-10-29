@@ -252,9 +252,17 @@ class DailyPipeline:
         video_work_dir = self.work_dir / "video"
         video_gen = VideoGenerator(video_work_dir, characters)
 
+        # Audio stems directory
+        audio_stems_dir = self.work_dir / "audio_stems"
+
         # Generate video
         video_path = self.work_dir / f"{self.episode_id}.mp4"
-        video_gen.generate_video(script, audio_path, video_path)
+        video_gen.generate_video(
+            script,
+            audio_path,
+            video_path,
+            audio_stems_dir=audio_stems_dir
+        )
 
         logger.info(f"Video generated: {video_path}")
         return video_path

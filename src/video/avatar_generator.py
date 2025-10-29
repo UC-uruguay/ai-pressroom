@@ -54,7 +54,7 @@ class AvatarGenerator:
         size: tuple[int, int] = DEFAULT_SIZE
     ) -> Path:
         """
-        Generate avatar image for a speaker.
+        Generate personified avatar image for a speaker.
 
         Args:
             speaker: Speaker name (chatgpt, gemini, claude)
@@ -66,35 +66,36 @@ class AvatarGenerator:
         """
         output_path = self.output_dir / f"avatar_{speaker}.png"
 
-        # Skip if already exists
-        if output_path.exists():
-            logger.info(f"Avatar already exists: {output_path}")
-            return output_path
-
-        logger.info(f"Generating avatar for {speaker}...")
+        # Always regenerate to ensure latest design
+        logger.info(f"Generating personified avatar for {speaker}...")
 
         # Get colors
         colors = self.COLORS.get(speaker, self.COLORS["chatgpt"])
 
-        # Create image
+        # Create image with gradient background
         img = Image.new("RGB", size, colors["background"])
         draw = ImageDraw.Draw(img)
 
-        # Draw accent gradient (simple two-tone)
-        for i in range(size[1] // 2):
-            alpha = i / (size[1] // 2)
-            # Simple blend
+        # Draw gradient background
+        for y in range(size[1]):
+            alpha = y / size[1]
+            # Blend from background to accent
             draw.line(
-                [(0, i), (size[0], i)],
-                fill=colors["background"]
+                [(0, y), (size[0], y)],
+                fill=self._blend_color(
+                    colors["background"],
+                    colors["accent"],
+                    alpha * 0.3
+                )
             )
 
-        # Draw bottom accent bar
-        accent_height = size[1] // 4
-        draw.rectangle(
-            [(0, size[1] - accent_height), (size[0], size[1])],
-            fill=colors["accent"]
-        )
+        # Draw personified character based on speaker
+        if speaker == "chatgpt":
+            self._draw_chatgpt_character(draw, size, colors)
+        elif speaker == "gemini":
+            self._draw_gemini_character(draw, size, colors)
+        elif speaker == "claude":
+            self._draw_claude_character(draw, size, colors)
 
         # Get text to display
         ai_name = character.get("ai_name", speaker.upper())
@@ -161,10 +162,18 @@ class AvatarGenerator:
 
         # Draw company name at bottom
         if company:
+            try:
+                font_small = ImageFont.truetype(
+                    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                    40
+                )
+            except OSError:
+                font_small = ImageFont.load_default()
+
             bbox = draw.textbbox((0, 0), company, font=font_small)
             text_width = bbox[2] - bbox[0]
             x = (size[0] - text_width) // 2
-            y = size[1] - accent_height // 2 - 20
+            y = size[1] - 100
 
             draw.text(
                 (x, y),
@@ -200,3 +209,230 @@ class AvatarGenerator:
 
         logger.info(f"Generated {len(avatars)} avatar images")
         return avatars
+
+    def _blend_color(
+        self,
+        color1: str,
+        color2: str,
+        alpha: float
+    ) -> str:
+        """
+        Blend two hex colors.
+
+        Args:
+            color1: First color (hex)
+            color2: Second color (hex)
+            alpha: Blend factor (0-1)
+
+        Returns:
+            Blended color (hex)
+        """
+        # Convert hex to RGB
+        c1 = tuple(int(color1[i:i+2], 16) for i in (1, 3, 5))
+        c2 = tuple(int(color2[i:i+2], 16) for i in (1, 3, 5))
+
+        # Blend
+        blended = tuple(
+            int(c1[i] * (1 - alpha) + c2[i] * alpha)
+            for i in range(3)
+        )
+
+        # Convert back to hex
+        return f"#{blended[0]:02x}{blended[1]:02x}{blended[2]:02x}"
+
+    def _draw_chatgpt_character(
+        self,
+        draw: ImageDraw.ImageDraw,
+        size: tuple[int, int],
+        colors: Dict[str, str]
+    ) -> None:
+        """Draw ChatGPT character (GPT Professor with glasses)."""
+        cx, cy = size[0] // 2, size[1] // 2 - 200
+
+        # Face (circle)
+        face_radius = 200
+        draw.ellipse(
+            [cx - face_radius, cy - face_radius,
+             cx + face_radius, cy + face_radius],
+            fill="#FFFFFF",
+            outline=colors["accent"],
+            width=8
+        )
+
+        # Glasses (two circles connected)
+        glass_radius = 60
+        glass_y_offset = -20
+        # Left glass
+        draw.ellipse(
+            [cx - 120 - glass_radius, cy + glass_y_offset - glass_radius,
+             cx - 120 + glass_radius, cy + glass_y_offset + glass_radius],
+            outline=colors["accent"],
+            width=6
+        )
+        # Right glass
+        draw.ellipse(
+            [cx + 120 - glass_radius, cy + glass_y_offset - glass_radius,
+             cx + 120 + glass_radius, cy + glass_y_offset + glass_radius],
+            outline=colors["accent"],
+            width=6
+        )
+        # Bridge
+        draw.line(
+            [cx - 60, cy + glass_y_offset, cx + 60, cy + glass_y_offset],
+            fill=colors["accent"],
+            width=6
+        )
+
+        # Eyes (behind glasses)
+        eye_radius = 15
+        # Left eye
+        draw.ellipse(
+            [cx - 120 - eye_radius, cy + glass_y_offset - eye_radius,
+             cx - 120 + eye_radius, cy + glass_y_offset + eye_radius],
+            fill="#000000"
+        )
+        # Right eye
+        draw.ellipse(
+            [cx + 120 - eye_radius, cy + glass_y_offset - eye_radius,
+             cx + 120 + eye_radius, cy + glass_y_offset + eye_radius],
+            fill="#000000"
+        )
+
+        # Smile (arc)
+        draw.arc(
+            [cx - 80, cy + 30, cx + 80, cy + 120],
+            start=0,
+            end=180,
+            fill=colors["accent"],
+            width=8
+        )
+
+    def _draw_gemini_character(
+        self,
+        draw: ImageDraw.ImageDraw,
+        size: tuple[int, int],
+        colors: Dict[str, str]
+    ) -> None:
+        """Draw Gemini character (energetic star-shaped character)."""
+        cx, cy = size[0] // 2, size[1] // 2 - 200
+
+        # Star-shaped body
+        star_points = []
+        num_points = 5
+        outer_radius = 220
+        inner_radius = 100
+
+        for i in range(num_points * 2):
+            angle = i * 3.14159 / num_points - 3.14159 / 2
+            if i % 2 == 0:
+                radius = outer_radius
+            else:
+                radius = inner_radius
+            x = cx + int(radius * __import__('math').cos(angle))
+            y = cy + int(radius * __import__('math').sin(angle))
+            star_points.append((x, y))
+
+        # Draw star
+        draw.polygon(star_points, fill="#FFFFFF", outline=colors["accent"], width=8)
+
+        # Face on the star
+        # Happy eyes (^_^)
+        draw.arc(
+            [cx - 70, cy - 30, cx - 30, cy - 10],
+            start=180,
+            end=360,
+            fill="#000000",
+            width=6
+        )
+        draw.arc(
+            [cx + 30, cy - 30, cx + 70, cy - 10],
+            start=180,
+            end=360,
+            fill="#000000",
+            width=6
+        )
+
+        # Big smile
+        draw.arc(
+            [cx - 90, cy + 10, cx + 90, cy + 100],
+            start=0,
+            end=180,
+            fill=colors["accent"],
+            width=10
+        )
+
+        # Sparkles around
+        sparkle_positions = [
+            (cx - 280, cy - 100),
+            (cx + 280, cy - 100),
+            (cx - 250, cy + 150),
+            (cx + 250, cy + 150)
+        ]
+        for sx, sy in sparkle_positions:
+            # Small star sparkle
+            draw.line([sx - 15, sy, sx + 15, sy], fill="#FFFF00", width=4)
+            draw.line([sx, sy - 15, sx, sy + 15], fill="#FFFF00", width=4)
+
+    def _draw_claude_character(
+        self,
+        draw: ImageDraw.ImageDraw,
+        size: tuple[int, int],
+        colors: Dict[str, str]
+    ) -> None:
+        """Draw Claude character (wise, calm character)."""
+        cx, cy = size[0] // 2, size[1] // 2 - 200
+
+        # Face (rounded square for sophistication)
+        face_size = 350
+        draw.rounded_rectangle(
+            [cx - face_size // 2, cy - face_size // 2,
+             cx + face_size // 2, cy + face_size // 2],
+            radius=50,
+            fill="#FFFFFF",
+            outline=colors["accent"],
+            width=8
+        )
+
+        # Calm, intelligent eyes
+        eye_y = cy - 40
+        # Left eye
+        draw.ellipse(
+            [cx - 100 - 25, eye_y - 15, cx - 100 + 25, eye_y + 15],
+            fill="#000000"
+        )
+        # Right eye
+        draw.ellipse(
+            [cx + 100 - 25, eye_y - 15, cx + 100 + 25, eye_y + 15],
+            fill="#000000"
+        )
+
+        # Slight smile (subtle)
+        draw.arc(
+            [cx - 70, cy + 40, cx + 70, cy + 100],
+            start=0,
+            end=180,
+            fill=colors["accent"],
+            width=6
+        )
+
+        # Thought symbol (cloud above head)
+        cloud_y = cy - face_size // 2 - 120
+        # Three circles forming a thought cloud
+        draw.ellipse(
+            [cx - 60, cloud_y, cx - 10, cloud_y + 50],
+            fill="#FFFFFF",
+            outline=colors["accent"],
+            width=4
+        )
+        draw.ellipse(
+            [cx - 10, cloud_y - 20, cx + 50, cloud_y + 40],
+            fill="#FFFFFF",
+            outline=colors["accent"],
+            width=4
+        )
+        draw.ellipse(
+            [cx + 20, cloud_y, cx + 70, cloud_y + 50],
+            fill="#FFFFFF",
+            outline=colors["accent"],
+            width=4
+        )

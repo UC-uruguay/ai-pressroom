@@ -378,8 +378,9 @@ class DebateOrchestrator:
             speaker=debater_a,
             system_prompt=system_prompts[debater_a],
             user_prompt=(
+                f"トピック「{topic.title}」について討論しています。\n\n"
                 f"オーケストレーターの質問: 「{orchestrator_q1}」\n\n"
-                "あなたの立場を明確に表明してください。"
+                "このトピックに関して、あなたの立場を明確に表明してください。"
             ),
             conversation=conversation
         )
@@ -391,8 +392,9 @@ class DebateOrchestrator:
             speaker=debater_b,
             system_prompt=system_prompts[debater_b],
             user_prompt=(
+                f"トピック「{topic.title}」について討論しています。\n\n"
                 f"討論者Aの意見: 「{debater_a_r1}」\n\n"
-                "**異なる視点**から反論してください。"
+                "このトピックに関して、**異なる視点**から反論してください。"
             ),
             conversation=conversation
         )
@@ -404,8 +406,8 @@ class DebateOrchestrator:
             speaker=orchestrator,
             system_prompt=system_prompts[orchestrator],
             user_prompt=(
-                "両者の意見を聞きました。\n\n"
-                "さらに**本質を突く質問**をして、議論を深めてください。"
+                f"トピック「{topic.title}」について、両者の意見を聞きました。\n\n"
+                "このトピックに焦点を当てたまま、さらに**本質を突く質問**をして、議論を深めてください。"
             ),
             conversation=conversation
         )
@@ -417,8 +419,8 @@ class DebateOrchestrator:
             speaker=debater_a,
             system_prompt=system_prompts[debater_a],
             user_prompt=(
-                f"オーケストレーターの質問: 「{orchestrator_q2}」\n\n"
-                "この質問に応答しつつ、あなたの立場を強化してください。"
+                f"トピック「{topic.title}」に関するオーケストレーターの質問: 「{orchestrator_q2}」\n\n"
+                "このトピックの範囲内で、この質問に応答しつつ、あなたの立場を強化してください。"
             ),
             conversation=conversation
         )
@@ -430,8 +432,8 @@ class DebateOrchestrator:
             speaker=debater_b,
             system_prompt=system_prompts[debater_b],
             user_prompt=(
-                f"討論者Aの応答: 「{debater_a_r2}」\n\n"
-                "さらに**批判的な視点**から反論してください。"
+                f"トピック「{topic.title}」に関する討論者Aの応答: 「{debater_a_r2}」\n\n"
+                "このトピックの範囲内で、さらに**批判的な視点**から反論してください。"
             ),
             conversation=conversation
         )
@@ -443,8 +445,8 @@ class DebateOrchestrator:
             speaker=orchestrator,
             system_prompt=system_prompts[orchestrator],
             user_prompt=(
-                "議論が深まってきました。\n\n"
-                "最後に、**この議論の本質は何か**を問う質問をしてください。"
+                f"トピック「{topic.title}」についての議論が深まってきました。\n\n"
+                "最後に、**このトピックの本質は何か**を問う質問をしてください。"
             ),
             conversation=conversation
         )
@@ -456,8 +458,8 @@ class DebateOrchestrator:
             speaker=debater_a,
             system_prompt=system_prompts[debater_a],
             user_prompt=(
-                f"最後の質問: 「{orchestrator_q3}」\n\n"
-                "あなたの**最終的な見解**を述べてください。"
+                f"トピック「{topic.title}」に関する最後の質問: 「{orchestrator_q3}」\n\n"
+                "このトピックについて、あなたの**最終的な見解**を述べてください。"
             ),
             conversation=conversation
         )
@@ -469,8 +471,8 @@ class DebateOrchestrator:
             speaker=debater_b,
             system_prompt=system_prompts[debater_b],
             user_prompt=(
-                f"最後の質問: 「{orchestrator_q3}」\n\n"
-                "あなたの**最終的な見解**を述べてください。"
+                f"トピック「{topic.title}」に関する最後の質問: 「{orchestrator_q3}」\n\n"
+                "このトピックについて、あなたの**最終的な見解**を述べてください。"
             ),
             conversation=conversation
         )
@@ -482,8 +484,8 @@ class DebateOrchestrator:
             speaker=orchestrator,
             system_prompt=system_prompts[orchestrator],
             user_prompt=(
-                "討論を締めくくってください。\n\n"
-                "安易な結論ではなく、**さらなる思考を促す挑発的な一言**で終わらせてください。"
+                f"トピック「{topic.title}」についての討論を締めくくってください。\n\n"
+                "安易な結論ではなく、**このトピックについてさらなる思考を促す挑発的な一言**で終わらせてください。"
             ),
             conversation=conversation
         )

@@ -16,6 +16,7 @@ from ..publish.storage import create_storage_provider
 from ..shared.logger import get_logger
 from ..shared.settings import get_settings
 from ..tts.mock_tts import create_tts_provider
+from ..video.video_generator import VideoGenerator
 
 logger = get_logger(__name__)
 
@@ -60,7 +61,7 @@ class DailyPipeline:
         Run complete pipeline.
 
         Args:
-            resume_from: Stage to resume from (collect, nlp, debate, tts, mix, publish)
+            resume_from: Stage to resume from (collect, nlp, debate, tts, mix, video, publish)
 
         Returns:
             Path to generated podcast file
@@ -101,13 +102,24 @@ class DailyPipeline:
         else:
             mixed_audio = self.work_dir / f"{self.episode_id}.mp3"
 
-        # Stage 6: Publish
+        # Stage 6: Generate video (optional)
+        video_path = None
+        if self.settings.video.enabled:
+            if not resume_from or resume_from in ["collect", "nlp", "debate", "tts", "mix", "video"]:
+                video_path = self._generate_video(script, mixed_audio)
+                self._save_checkpoint("video_path", str(video_path))
+            else:
+                saved_path = self._load_checkpoint("video_path")
+                video_path = Path(saved_path) if saved_path else None
+
+        # Stage 7: Publish
         episode_meta = self._publish(
             mixed_audio,
             script.title,
             script.topic_summary,
             articles,
-            int(script.total_duration_sec)
+            int(script.total_duration_sec),
+            video_path=video_path
         )
 
         logger.info(f"Pipeline complete! Episode: {episode_meta.episode_id}")
@@ -226,20 +238,49 @@ class DailyPipeline:
         logger.info(f"Mixed audio saved: {output_path}")
         return output_path
 
+    def _generate_video(self, script, audio_path: Path) -> Path:
+        """Stage 6: Generate video (optional)."""
+        logger.info("Stage 6: Generating video")
+
+        # Load character configurations
+        import yaml
+        character_path = self.settings.config_dir / "characters.yaml"
+        with open(character_path, 'r', encoding='utf-8') as f:
+            characters = yaml.safe_load(f) or {}
+
+        # Create video generator
+        video_work_dir = self.work_dir / "video"
+        video_gen = VideoGenerator(video_work_dir, characters)
+
+        # Generate video
+        video_path = self.work_dir / f"{self.episode_id}.mp4"
+        video_gen.generate_video(script, audio_path, video_path)
+
+        logger.info(f"Video generated: {video_path}")
+        return video_path
+
     def _publish(
         self,
         audio_path: Path,
         title: str,
         description: str,
         source_articles: List[NewsArticle],
-        duration_seconds: int
+        duration_seconds: int,
+        video_path: Optional[Path] = None
     ) -> EpisodeMeta:
-        """Stage 6: Publish episode."""
-        logger.info("Stage 6: Publishing episode")
+        """Stage 7: Publish episode."""
+        logger.info("Stage 7: Publishing episode")
 
         # Upload audio file
         remote_key = f"episodes/{self.episode_id}.mp3"
         audio_url = self.storage.upload(audio_path, remote_key)
+
+        # Upload video file if available
+        video_url = None
+        if video_path and video_path.exists():
+            video_remote_key = f"episodes/{self.episode_id}.mp4"
+            video_url = self.storage.upload(video_path, video_remote_key)
+            logger.info(f"Video uploaded: {video_url}")
 
         # Get file size
         file_size = audio_path.stat().st_size
@@ -253,7 +294,8 @@ class DailyPipeline:
             audio_url=audio_url,
             audio_file_size=file_size,
             duration_seconds=duration_seconds,
-            source_articles=[a.url for a in source_articles if a.url]
+            source_articles=[a.url for a in source_articles if a.url],
+            video_url=video_url
         )
 
         # Save metadata

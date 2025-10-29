@@ -21,6 +21,9 @@ lxml>=4.9.0
 pydub>=0.25.1
 ffmpeg-python>=0.2.0
 
+# Video generation
+Pillow>=10.0.0
+
 # Utilities
 tenacity>=8.2.3
 rich>=13.7.0

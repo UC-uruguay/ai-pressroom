@@ -20,6 +20,7 @@ class EpisodeMeta:
     duration_seconds: int
     source_articles: List[str]  # Article URLs
     transcript_path: Optional[str] = None
+    video_url: Optional[str] = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""

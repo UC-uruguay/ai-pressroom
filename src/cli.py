@@ -32,7 +32,7 @@ def cli(verbose, config):
 
 @cli.command()
 @click.option('--date', type=str, help='Date for episode (YYYY-MM-DD), defaults to today')
-@click.option('--resume', type=click.Choice(['collect', 'nlp', 'debate', 'tts', 'mix', 'publish']),
+@click.option('--resume', type=click.Choice(['collect', 'nlp', 'debate', 'tts', 'mix', 'video', 'publish']),
               help='Resume from specific stage')
 def run_daily(date, resume):
     """
@@ -69,7 +69,7 @@ def run_daily(date, resume):
 
 
 @cli.command()
-@click.option('--from-stage', type=click.Choice(['collect', 'nlp', 'debate', 'tts', 'mix', 'publish']),
+@click.option('--from-stage', type=click.Choice(['collect', 'nlp', 'debate', 'tts', 'mix', 'video', 'publish']),
               required=True, help='Stage to resume from')
 @click.option('--date', type=str, required=True, help='Date of episode (YYYY-MM-DD)')
 def resume(from_stage, date):

@@ -44,6 +44,14 @@ class StorageConfig(BaseSettings):
     s3_bucket: Optional[str] = None
 
 
+class VideoConfig(BaseSettings):
+    """Video generation configuration."""
+    enabled: bool = True
+    width: int = 1920
+    height: int = 1080
+    fps: int = 30
+
+
 class RSSConfig(BaseSettings):
     """Podcast RSS feed configuration."""
     site_title: str = "Synthetic Newsroom"
@@ -84,6 +92,7 @@ class Settings(BaseSettings):
     audio: AudioConfig = AudioConfig()
     storage: StorageConfig = StorageConfig()
     rss: RSSConfig = RSSConfig()
+    video: VideoConfig = VideoConfig()
 
     # Runtime settings
     project_root: Path = Field(default_factory=lambda: Path(__file__).parent.parent.parent)
